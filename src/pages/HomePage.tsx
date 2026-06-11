@@ -4,6 +4,7 @@ import { usePostStore } from '../store/usePostStore'
 import { useAuthStore } from '../store/useAuthStore'
 import { uploadImage } from '../lib/uploadImage'
 import Navbar from '../components/Navbar'
+import PostSkeleton from '../components/PostSkeleton'
 import StoriesBar from '../components/StoriesBar'
 import Sidebar from '../components/Sidebar'
 import { Camera, X } from 'lucide-react'
@@ -13,7 +14,7 @@ import MessagesPage from '../components/MessagesPage'
 export default function HomePage() {
 const { user } = useAuthStore()
 // AFTER
-const { posts, fetchPosts, addPost, toggleReaction, addComment } = usePostStore()
+const { posts, loading, fetchPosts, addPost, toggleReaction, addComment } = usePostStore()
 const [showUpload, setShowUpload] = useState(false)
 const [caption, setCaption] = useState('')
 const [file, setFile] = useState<File | null>(null)
@@ -145,7 +146,13 @@ return (
 
       {/* Feed */}
       <main className="max-w-xl mx-auto px-3 pt-4 pb-24 flex flex-col gap-3">
-        {posts.length === 0 ? (
+        {loading ? (
+          <>
+            <PostSkeleton />
+            <PostSkeleton />
+            <PostSkeleton />
+          </>
+        ) : posts.length === 0 ? (
          <div className="text-center py-20">
             <div className="text-5xl mb-4">🎮</div>
             <p className="text-gray-800 font-extrabold text-lg">No posts yet</p>
