@@ -23,7 +23,6 @@ const [uploading, setUploading] = useState(false)
 const [commentText, setCommentText] = useState<Record<string, string>>({})      // ← add
 const [showComments, setShowComments] = useState<Record<string, boolean>>({})   // ← add
 
-const [openReactionPostId, setOpenReactionPostId] = useState<string | null>(null)
 const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 const [activePage, setActivePage] = useState('Home')
