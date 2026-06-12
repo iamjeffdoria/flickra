@@ -18,7 +18,16 @@ function App() {
     return () => unsubscribe()
   }, [])
 
-if (loading) return null
+if (loading) return (
+  <div className="fixed inset-0 bg-white flex items-center justify-center">
+    <div className="flex flex-col items-center gap-3">
+      <div className="w-10 h-10 rounded-xl bg-violet-600 flex items-center justify-center animate-pulse">
+        <span className="text-white text-lg">🎮</span>
+      </div>
+      <p className="text-xs font-extrabold text-violet-400 uppercase tracking-widest">Loading...</p>
+    </div>
+  </div>
+)
 
   return (
     <BrowserRouter>

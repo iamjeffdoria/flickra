@@ -1,7 +1,7 @@
 import { signOut } from 'firebase/auth'
 import { auth } from '../lib/firebase'
 import { useAuthStore } from '../store/useAuthStore'
-import { Camera, LogOut, Plus, Menu, Search } from 'lucide-react'
+import { Camera, LogOut, Plus, Menu, Search, User } from 'lucide-react'
 import NavChatPanel from './NavChatPanel'
 import { useState, useRef, useEffect } from 'react'
 import SearchBar from './SearchBars'
@@ -10,9 +10,10 @@ import SearchBar from './SearchBars'
 interface NavbarProps {
   onPostClick: () => void
   onMenuClick?: () => void
+  onProfileClick: () => void
 }
 
-export default function Navbar({ onPostClick, onMenuClick }: NavbarProps) {
+export default function Navbar({ onPostClick, onMenuClick, onProfileClick }: NavbarProps) {
   const { user } = useAuthStore()
   const [showDropdown, setShowDropdown] = useState(false)
   const [showMobileSearch, setShowMobileSearch] = useState(false)
@@ -103,10 +104,15 @@ export default function Navbar({ onPostClick, onMenuClick }: NavbarProps) {
             {showDropdown && (
               <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-lg border border-gray-100 py-2 z-50">
                 <div className="px-4 py-2 border-b border-gray-100">
-                  <p className="text-xs font-extrabold text-gray-900 truncate">
-                    {user?.displayName || 'User'}
-                  </p>
-                  <p className="text-xs text-gray-400 truncate">{user?.email}</p>
+                  <button
+                    onClick={() => { setShowDropdown(false); onProfileClick() }}
+                    className="w-full text-left hover:opacity-70 transition"
+                  >
+                    <p className="text-xs font-extrabold text-gray-900 truncate">
+                      {user?.displayName || 'User'}
+                    </p>
+                    <p className="text-xs text-gray-400 truncate">{user?.email}</p>
+                  </button>
                 </div>
                 <button
                   onClick={() => { setShowConfirm(true); setShowDropdown(false) }}
