@@ -1,7 +1,7 @@
 import { signOut } from 'firebase/auth'
 import { auth } from '../lib/firebase'
 import { useAuthStore } from '../store/useAuthStore'
-import { Camera, LogOut, Plus, Menu, Search, User } from 'lucide-react'
+import { Camera, LogOut, Plus, Menu, Search} from 'lucide-react'
 import NavChatPanel from './NavChatPanel'
 import { useState, useRef, useEffect } from 'react'
 import SearchBar from './SearchBars'
