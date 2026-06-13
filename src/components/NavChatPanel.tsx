@@ -112,7 +112,7 @@ const { handleTyping, clearTyping } = useTypingIndicator(
 
       {/* Panel */}
       {showChats && (
-       <div className="fixed inset-0 z-[999] sm:z-50 sm:absolute sm:inset-auto sm:right-0 sm:top-11 sm:w-80 sm:rounded-2xl sm:shadow-xl sm:border sm:border-gray-100 bg-white flex flex-col overflow-hidden sm:h-[480px]">
+       <div className="fixed inset-0 z-[999] sm:z-50 sm:absolute sm:inset-auto sm:right-0 sm:top-11 sm:w-80 sm:rounded-2xl sm:shadow-xl sm:border sm:border-gray-100 bg-white flex flex-col overflow-hidden sm:h-[480px] h-[100dvh]">
 
           {/* New chat overlay */}
           {showNewChat && (
@@ -200,7 +200,8 @@ const { handleTyping, clearTyping } = useTypingIndicator(
           ) : (
             <>
               {/* Chat header */}
-              <div className="flex items-center gap-2 px-3 py-2.5 border-b border-gray-100 shrink-0">
+             
+            <div className="sticky top-0 z-10 bg-white flex items-center gap-2 px-3 py-2.5 border-b border-gray-100 shrink-0">
                 <button onClick={() => setActiveConv(null)} className="p-1 rounded-lg hover:bg-violet-50 text-gray-400 transition">
                   <X className="w-3.5 h-3.5" />
                 </button>

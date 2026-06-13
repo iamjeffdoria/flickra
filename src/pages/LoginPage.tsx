@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth'
 import { auth } from '../lib/firebase'
 import { db } from '../lib/firebase'
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore'
+import { doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore'
 import { useNavigate, Link } from 'react-router-dom'
 import { Mail, Lock, Camera } from 'lucide-react'
 
@@ -27,13 +27,18 @@ export default function LoginPage() {
   const handleGoogle = async () => {
     try {
       const { user } = await signInWithPopup(auth, provider)
-      await setDoc(doc(db, 'users', user.uid), {
+      const userRef = doc(db, 'users', user.uid)
+      const snap = await getDoc(userRef)
+
+      await setDoc(userRef, {
         uid: user.uid,
         displayName: user.displayName || '',
         email: user.email || '',
         createdAt: serverTimestamp(),
+        ...(snap.exists() ? {} : { onboardingComplete: false }),
       }, { merge: true })
-      navigate('/')
+
+      navigate(snap.exists() ? '/' : '/onboarding')
     } catch (err: any) {
       setError('Could not sign in with Google.')
     }

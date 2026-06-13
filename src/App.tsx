@@ -6,13 +6,21 @@ import { useAuthStore } from './store/useAuthStore'
 import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
 import HomePage from './pages/HomePage'
+import OnboardingPage from './pages/OnboardingPage'
+
+import { doc, getDoc } from 'firebase/firestore'
+import { db } from './lib/firebase'
 
 function App() {
-  const { setUser, setLoading, user, loading } = useAuthStore()
+  const { setUser, setLoading, setOnboardingComplete, user, loading, onboardingComplete } = useAuthStore()
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setUser(user)
+      if (user) {
+        const snap = await getDoc(doc(db, 'users', user.uid))
+        setOnboardingComplete(snap.exists() ? !!snap.data().onboardingComplete : false)
+      }
       setLoading(false)
     })
     return () => unsubscribe()
@@ -34,7 +42,8 @@ if (loading) return (
       <Routes>
         <Route path="/login" element={!user ? <LoginPage /> : <Navigate to="/" />} />
         <Route path="/signup" element={!user ? <SignupPage /> : <Navigate to="/" />} />
-        <Route path="/" element={user ? <HomePage /> : <Navigate to="/login" />} />
+        <Route path="/onboarding" element={user ? (onboardingComplete ? <Navigate to="/" /> : <OnboardingPage />) : <Navigate to="/login" />} />
+        <Route path="/" element={user ? (onboardingComplete ? <HomePage /> : <Navigate to="/onboarding" />) : <Navigate to="/login" />} />
       </Routes>
     </BrowserRouter>
   )
