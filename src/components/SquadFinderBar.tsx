@@ -1,14 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock'
+import { useSquadStore } from '../store/useSquadStore'
+import { useAuthStore } from '../store/useAuthStore'
 
 const GAMES = ['MLBB', 'Valorant', 'COD Mobile', 'Free Fire', 'Ragnarok']
 
-const SAMPLE_SQUADS = [
-  { id: 1, game: 'MLBB', rank: 'Mythic', role: 'Jungler', region: 'Visayas', name: 'Zeus', slots: 1 },
-  { id: 2, game: 'Valorant', rank: 'Diamond', role: 'Duelist', region: 'Luzon', name: 'trafficmgmt', slots: 2 },
-  { id: 3, game: 'MLBB', rank: 'Legend', role: 'Gold Lane', region: 'Mindanao', name: 'Rachi', slots: 1 },
-  { id: 4, game: 'Free Fire', rank: 'Heroic', role: 'Any', region: 'Visayas', name: 'JDoria', slots: 3 },
-]
 
 const GAME_COLORS: Record<string, string> = {
   'MLBB': 'bg-blue-50 text-blue-600 border-blue-200',
@@ -19,6 +15,8 @@ const GAME_COLORS: Record<string, string> = {
 }
 
 export default function SquadFinderBar() {
+  const { user } = useAuthStore()
+  const { squads, fetchSquads, addSquad, joinSquad } = useSquadStore()
   const [isOpen, setIsOpen] = useState(false)
   const [showForm, setShowForm] = useState(false)
 
@@ -28,6 +26,32 @@ export default function SquadFinderBar() {
   const [role, setRole] = useState('')
   const [region, setRegion] = useState('Visayas')
   const [slots, setSlots] = useState('1')
+
+  useEffect(() => {
+    const unsub = fetchSquads()
+    return () => unsub?.()
+  }, [])
+
+  const handlePostLFG = async () => {
+    if (!user || !rank.trim() || !role.trim()) return
+    await addSquad(
+      user.uid,
+      user.displayName || user.email || 'Anonymous',
+      game,
+      rank.trim(),
+      role.trim(),
+      region,
+      Number(slots)
+    )
+    setRank('')
+    setRole('')
+    setShowForm(false)
+  }
+
+  const handleJoin = async (squadId: string, currentSlots: number) => {
+    if (!user) return
+    await joinSquad(squadId, user.uid, user.displayName || user.email || 'Anonymous', currentSlots)
+  }
 
   return (
     <>
@@ -51,29 +75,52 @@ export default function SquadFinderBar() {
               </button>
             </div>
 
-            {/* Vertical squad list */}
+          {/* Vertical squad list */}
            <div className="flex flex-col gap-2 overflow-y-auto overscroll-contain px-2.5 py-2.5">
-              {SAMPLE_SQUADS.map((squad) => (
-                <div
-                  key={squad.id}
-                  className="bg-white border border-gray-100 rounded-xl p-2.5 shadow-sm hover:border-violet-200 transition cursor-pointer"
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded border ${GAME_COLORS[squad.game]}`}>
-                      {squad.game}
-                    </span>
-                    <span className="text-[9px] font-extrabold text-green-500">
-                      {squad.slots} slot{squad.slots > 1 ? 's' : ''}
-                    </span>
-                  </div>
-                  <p className="text-xs font-extrabold text-gray-900 truncate">{squad.name}</p>
-                  <p className="text-[10px] text-violet-500 font-bold">{squad.rank}</p>
-                  <p className="text-[10px] text-gray-400 font-bold truncate">{squad.role} · {squad.region}</p>
-                  <button className="mt-2 w-full text-[9px] font-extrabold py-1 bg-violet-50 text-violet-600 rounded-lg border border-violet-100 hover:bg-violet-100 transition">
-                    Join Squad
-                  </button>
-                </div>
-              ))}
+              {squads.length === 0 ? (
+                <p className="text-[10px] text-gray-300 font-bold text-center py-6">No squads yet. Be first!</p>
+              ) : (
+                squads.map((squad) => {
+                  const alreadyJoined = squad.filledBy?.some(f => f.userId === user?.uid)
+                  return (
+                    <div
+                      key={squad.id}
+                      className="bg-white border border-gray-100 rounded-xl p-2.5 shadow-sm hover:border-violet-200 transition cursor-pointer"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded border ${GAME_COLORS[squad.game]}`}>
+                          {squad.game}
+                        </span>
+                        <span className="text-[9px] font-extrabold text-green-500">
+                          {squad.slots} slot{squad.slots > 1 ? 's' : ''}
+                        </span>
+                      </div>
+                     <p className="text-xs font-extrabold text-gray-900 truncate">{squad.displayName}</p>
+                      <p className="text-[10px] text-violet-500 font-bold">{squad.rank}</p>
+                      <p className="text-[10px] text-gray-400 font-bold truncate">{squad.role} · {squad.region}</p>
+                      <button
+                        onClick={() => handleJoin(squad.id, squad.slots)}
+                        disabled={alreadyJoined || squad.userId === user?.uid || squad.slots <= 0}
+                        className={`mt-2 w-full text-[9px] font-extrabold py-1 rounded-lg border transition disabled:cursor-not-allowed ${
+                          alreadyJoined
+                            ? 'bg-green-50 text-green-600 border-green-100'
+                            : squad.slots <= 0
+                            ? 'bg-gray-50 text-gray-400 border-gray-100'
+                            : 'bg-violet-50 text-violet-600 border-violet-100 hover:bg-violet-100'
+                        }`}
+                      >
+                        {alreadyJoined
+                          ? 'Joined ✓'
+                          : squad.userId === user?.uid
+                          ? 'Your Post'
+                          : squad.slots <= 0
+                          ? 'Full'
+                          : 'Join Squad'}
+                      </button>
+                    </div>
+                  )
+                })
+              )}
             </div>
           </div>
         )}
@@ -166,9 +213,10 @@ export default function SquadFinderBar() {
                 </div>
               </div>
 
-              <button
-                onClick={() => setShowForm(false)}
-                className="w-full py-3 text-xs font-extrabold text-white bg-violet-600 rounded-xl hover:bg-violet-700 active:scale-95 transition uppercase tracking-wider mt-1"
+             <button
+                onClick={handlePostLFG}
+                disabled={!rank.trim() || !role.trim()}
+                className="w-full py-3 text-xs font-extrabold text-white bg-violet-600 rounded-xl hover:bg-violet-700 active:scale-95 disabled:opacity-50 transition uppercase tracking-wider mt-1"
               >
                 ⚔️ Post LFG
               </button>

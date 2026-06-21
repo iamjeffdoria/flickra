@@ -1,5 +1,6 @@
 import { X } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { formatTimeAgo } from '../lib/formatTimeAgo'
 
 interface Comment {
   displayName: string
@@ -26,6 +27,12 @@ interface Props {
 export default function PostCard({ post, user, toggleReaction, addComment }: Props) {
   const [commentText, setCommentText] = useState('')
   const [showComments, setShowComments] = useState(false)
+  const [, forceTick] = useState(0)
+
+  useEffect(() => {
+    const interval = setInterval(() => forceTick(t => t + 1), 30000)
+    return () => clearInterval(interval)
+  }, [])
 
   const handleComment = async () => {
     const text = commentText.trim()
@@ -48,7 +55,7 @@ export default function PostCard({ post, user, toggleReaction, addComment }: Pro
           <div>
             <p className="text-xs font-extrabold text-gray-900 leading-tight">{post.displayName}</p>
             <p className="text-[10px] text-gray-400 font-bold">
-              {post.createdAt?.toDate?.()?.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              {formatTimeAgo(post.createdAt)}
             </p>
           </div>
         </div>
