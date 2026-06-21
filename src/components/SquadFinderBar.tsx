@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock'
 import { useSquadStore } from '../store/useSquadStore'
 import { useAuthStore } from '../store/useAuthStore'
+import SquadMembersModal from './SquadMembersModal'
+import type { SquadPost } from '../lib/squadService'
 
 const GAMES = ['MLBB', 'Valorant', 'COD Mobile', 'Free Fire', 'Ragnarok']
 
@@ -26,6 +28,7 @@ export default function SquadFinderBar() {
   const [role, setRole] = useState('')
   const [region, setRegion] = useState('Visayas')
   const [slots, setSlots] = useState('1')
+  const [viewingSquad, setViewingSquad] = useState<SquadPost | null>(null)
 
   useEffect(() => {
     const unsub = fetchSquads()
@@ -80,11 +83,12 @@ export default function SquadFinderBar() {
               {squads.length === 0 ? (
                 <p className="text-[10px] text-gray-300 font-bold text-center py-6">No squads yet. Be first!</p>
               ) : (
-                squads.map((squad) => {
+               squads.map((squad) => {
                   const alreadyJoined = squad.filledBy?.some(f => f.userId === user?.uid)
                   return (
                     <div
                       key={squad.id}
+                      onClick={() => setViewingSquad(squad)}
                       className="bg-white border border-gray-100 rounded-xl p-2.5 shadow-sm hover:border-violet-200 transition cursor-pointer"
                     >
                       <div className="flex items-center justify-between mb-2">
@@ -99,7 +103,7 @@ export default function SquadFinderBar() {
                       <p className="text-[10px] text-violet-500 font-bold">{squad.rank}</p>
                       <p className="text-[10px] text-gray-400 font-bold truncate">{squad.role} · {squad.region}</p>
                       <button
-                        onClick={() => handleJoin(squad.id, squad.slots)}
+                        onClick={(e) => { e.stopPropagation(); handleJoin(squad.id, squad.slots) }}
                         disabled={alreadyJoined || squad.userId === user?.uid || squad.slots <= 0}
                         className={`mt-2 w-full text-[9px] font-extrabold py-1 rounded-lg border transition disabled:cursor-not-allowed ${
                           alreadyJoined
@@ -133,8 +137,13 @@ export default function SquadFinderBar() {
           <span className="text-[10px] font-extrabold uppercase tracking-widest" style={{ writingMode: 'vertical-rl' }}>
             {isOpen ? '✕ Close' : '⚔️ Squad'}
           </span>
-        </button>
+       </button>
       </div>
+
+      {/* Squad Members Modal */}
+      {viewingSquad && (
+        <SquadMembersModal squad={viewingSquad} onClose={() => setViewingSquad(null)} />
+      )}
 
       {/* LFG Form Modal */}
       {showForm && (
