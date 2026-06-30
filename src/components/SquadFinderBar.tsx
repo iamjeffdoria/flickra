@@ -4,6 +4,7 @@ import { useSquadStore } from '../store/useSquadStore'
 import { useAuthStore } from '../store/useAuthStore'
 import SquadMembersModal from './SquadMembersModal'
 import type { SquadPost } from '../lib/squadService'
+import { openCheckout, LEMON_SQUEEZY_CONFIG } from '../lib/lemonSqueezy'
 
 const GAMES = ['MLBB', 'Valorant', 'COD Mobile', 'Free Fire', 'Ragnarok']
 
@@ -29,6 +30,7 @@ export default function SquadFinderBar() {
   const [region, setRegion] = useState('Visayas')
   const [slots, setSlots] = useState('1')
   const [viewingSquad, setViewingSquad] = useState<SquadPost | null>(null)
+  const [paywallSquad, setPaywallSquad] = useState<SquadPost | null>(null)
 
   useEffect(() => {
     const unsub = fetchSquads()
@@ -103,7 +105,11 @@ export default function SquadFinderBar() {
                       <p className="text-[10px] text-violet-500 font-bold">{squad.rank}</p>
                       <p className="text-[10px] text-gray-400 font-bold truncate">{squad.role} · {squad.region}</p>
                       <button
-                        onClick={(e) => { e.stopPropagation(); handleJoin(squad.id, squad.slots) }}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          if (alreadyJoined || squad.userId === user?.uid || squad.slots <= 0) return
+                          setPaywallSquad(squad) // 👈 show paywall instead of joining directly
+                        }}
                         disabled={alreadyJoined || squad.userId === user?.uid || squad.slots <= 0}
                         className={`mt-2 w-full text-[9px] font-extrabold py-1 rounded-lg border transition disabled:cursor-not-allowed ${
                           alreadyJoined
@@ -143,6 +149,70 @@ export default function SquadFinderBar() {
       {/* Squad Members Modal */}
       {viewingSquad && (
         <SquadMembersModal squad={viewingSquad} onClose={() => setViewingSquad(null)} />
+      )}
+
+      {/* Paywall Modal */}
+      {paywallSquad && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl">
+            <div className="text-center mb-5">
+              <div className="text-4xl mb-2">⚔️</div>
+              <h2 className="text-base font-extrabold text-gray-900">Join Squad</h2>
+              <p className="text-xs text-gray-400 font-bold mt-1">
+                Unlock squad joining to team up with
+              </p>
+              <p className="text-xs font-extrabold text-violet-600 mt-0.5">
+                {paywallSquad.displayName}
+              </p>
+            </div>
+
+            {/* Squad preview */}
+            <div className="bg-gray-50 rounded-2xl p-3 mb-4 border border-gray-100">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded border ${GAME_COLORS[paywallSquad.game]}`}>
+                  {paywallSquad.game}
+                </span>
+                <span className="text-[9px] font-extrabold text-green-500">
+                  {paywallSquad.slots} slot{paywallSquad.slots > 1 ? 's' : ''} left
+                </span>
+              </div>
+              <p className="text-xs font-extrabold text-gray-800">{paywallSquad.rank}</p>
+              <p className="text-[10px] text-gray-400 font-bold">{paywallSquad.role} · {paywallSquad.region}</p>
+            </div>
+
+            {/* What they get */}
+            <ul className="text-[10px] font-bold text-gray-500 space-y-1.5 mb-5">
+              {['Join any squad instantly', 'Show up in squad member list', 'Priority matching in your region'].map(item => (
+                <li key={item} className="flex items-center gap-2">
+                  <span className="text-green-500">✓</span> {item}
+                </li>
+              ))}
+            </ul>
+
+            <button
+              onClick={() => {
+                if (!user?.email) return
+                console.log('Variant ID:', LEMON_SQUEEZY_CONFIG.products.premiumSlots) // 👈 debug
+                openCheckout(
+                  LEMON_SQUEEZY_CONFIG.products.premiumSlots,
+                  user.email,
+                  user.uid
+                )
+                handleJoin(paywallSquad.id, paywallSquad.slots)
+                setPaywallSquad(null)
+              }}
+              className="w-full py-3 text-xs font-extrabold text-white bg-violet-600 rounded-xl hover:bg-violet-700 active:scale-95 transition uppercase tracking-wider"
+            >
+              ⚡ Unlock & Join Squad
+            </button>
+            <button
+              onClick={() => setPaywallSquad(null)}
+              className="w-full mt-2 py-2 text-[10px] font-extrabold text-gray-400 hover:text-gray-600 transition"
+            >
+              Maybe later
+            </button>
+          </div>
+        </div>
       )}
 
       {/* LFG Form Modal */}

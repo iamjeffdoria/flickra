@@ -1,5 +1,6 @@
 import { X } from 'lucide-react'
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { formatTimeAgo } from '../lib/formatTimeAgo'
 
 interface Comment {
@@ -9,6 +10,7 @@ interface Comment {
 
 interface Post {
   id: string
+  userId: string
   displayName: string
   imageUrl: string
   caption?: string
@@ -25,6 +27,7 @@ interface Props {
 }
 
 export default function PostCard({ post, user, toggleReaction, addComment }: Props) {
+  const navigate = useNavigate()
   const [commentText, setCommentText] = useState('')
   const [showComments, setShowComments] = useState(false)
   const [, forceTick] = useState(0)
@@ -46,14 +49,17 @@ export default function PostCard({ post, user, toggleReaction, addComment }: Pro
 
       {/* Post Header */}
       <div className="flex items-center justify-between px-3 py-3">
-        <div className="flex items-center gap-2">
+        <div
+          className="flex items-center gap-2 cursor-pointer"
+          onClick={() => navigate(`/profile/${post.userId}`)}
+        >
           <div className="w-8 h-8 bg-linear-to-br from-violet-500 to-pink-500 rounded-lg flex items-center justify-center shrink-0">
             <span className="text-xs font-extrabold text-white">
               {post.displayName?.[0]?.toUpperCase()}
             </span>
           </div>
           <div>
-            <p className="text-xs font-extrabold text-gray-900 leading-tight">{post.displayName}</p>
+            <p className="text-xs font-extrabold text-gray-900 leading-tight hover:underline">{post.displayName}</p>
             <p className="text-[10px] text-gray-400 font-bold">
               {formatTimeAgo(post.createdAt)}
             </p>

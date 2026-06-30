@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
 import { usePostStore } from '../store/usePostStore'
 import { useAuthStore } from '../store/useAuthStore'
 import { uploadImage } from '../lib/uploadImage'
@@ -26,7 +27,10 @@ const [uploading, setUploading] = useState(false)
 const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 const [activePage, setActivePage] = useState('Home')
-const [showProfile, setShowProfile] = useState(false)
+const { uid: routeUid } = useParams()
+const navigate = useNavigate()
+const showProfile = !!routeUid || false
+const [showOwnProfile, setShowOwnProfile] = useState(false)
 
 
 
@@ -79,7 +83,7 @@ return (
       <Navbar
         onPostClick={() => setShowUpload(true)}
         onMenuClick={() => setMobileMenuOpen(true)}
-        onProfileClick={() => setShowProfile(true)}
+        onProfileClick={() => setShowOwnProfile(true)}
       />
       <div className="flex flex-1">
         <Sidebar
@@ -91,7 +95,15 @@ return (
           onMobileClose={() => setMobileMenuOpen(false)}
         />
   <div className="flex-1 flex flex-col min-w-0 h-[calc(100vh-3.5rem)] overflow-y-auto">
-    {showProfile ? <ProfilePage onBack={() => setShowProfile(false)} /> : activePage === 'Messages' ? <MessagesPage onClose={() => setActivePage('Home')} /> : (<>
+    {showProfile || showOwnProfile ? (
+      <ProfilePage
+        profileUid={routeUid}
+        onBack={() => {
+          setShowOwnProfile(false)
+          if (routeUid) navigate('/')
+        }}
+      />
+    ) : activePage === 'Messages' ? <MessagesPage onClose={() => setActivePage('Home')} /> : (<>
     {/* Upload Modal */}
       {showUpload && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">

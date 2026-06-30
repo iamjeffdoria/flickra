@@ -14,12 +14,25 @@ import { db } from './lib/firebase'
 function App() {
   const { setUser, setLoading, setOnboardingComplete, user, loading, onboardingComplete } = useAuthStore()
 
-  useEffect(() => {
+ useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setUser(user)
       if (user) {
-        const snap = await getDoc(doc(db, 'users', user.uid))
-        setOnboardingComplete(snap.exists() ? !!snap.data().onboardingComplete : false)
+        try {
+          const snap = await getDoc(doc(db, 'users', user.uid))
+          setOnboardingComplete(snap.exists() ? !!snap.data().onboardingComplete : false)
+        } catch (err) {
+          // Transient permission-denied can fire on cold load while the
+          // Firestore SDK is still syncing the auth token. Retry once.
+          console.warn('Retrying profile fetch after transient error:', err)
+          try {
+            const snap = await getDoc(doc(db, 'users', user.uid))
+            setOnboardingComplete(snap.exists() ? !!snap.data().onboardingComplete : false)
+          } catch (err2) {
+            console.error('Profile fetch failed after retry:', err2)
+            setOnboardingComplete(false)
+          }
+        }
       }
       setLoading(false)
     })
@@ -44,6 +57,7 @@ if (loading) return (
         <Route path="/signup" element={!user ? <SignupPage /> : <Navigate to="/" />} />
         <Route path="/onboarding" element={user ? (onboardingComplete ? <Navigate to="/" /> : <OnboardingPage />) : <Navigate to="/login" />} />
         <Route path="/" element={user ? (onboardingComplete ? <HomePage /> : <Navigate to="/onboarding" />) : <Navigate to="/login" />} />
+        <Route path="/profile/:uid" element={user ? (onboardingComplete ? <HomePage /> : <Navigate to="/onboarding" />) : <Navigate to="/login" />} />
       </Routes>
     </BrowserRouter>
   )

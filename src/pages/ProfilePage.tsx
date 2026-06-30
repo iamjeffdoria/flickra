@@ -2,18 +2,23 @@ import { useState } from 'react'
 import { useAuthStore } from '../store/useAuthStore'
 import { useProfile } from '../hooks/useProfile'
 import { usePostStore } from '../store/usePostStore'
+import { useFollow } from '../hooks/useFollow'
 import { ArrowLeft, Edit2, Check, X } from 'lucide-react'
 
 const GAMES = ['MLBB', 'Valorant', 'COD Mobile', 'Free Fire', 'Ragnarok']
 
 interface Props {
   onBack: () => void
+  profileUid?: string // viewing someone else's profile; defaults to logged-in user
 }
 
-export default function ProfilePage({ onBack }: Props) {
+export default function ProfilePage({ onBack, profileUid }: Props) {
   const { user } = useAuthStore()
-  const { profile, loading, updateProfile } = useProfile(user?.uid)
+  const targetUid = profileUid || user?.uid
+  const isOwnProfile = targetUid === user?.uid
+  const { profile, loading, updateProfile } = useProfile(targetUid)
   const { posts } = usePostStore()
+  const { following, followerCount, followingCount, busy, toggleFollow } = useFollow(user?.uid, targetUid)
 
   const [editing, setEditing] = useState(false)
   const [bio, setBio] = useState('')
@@ -21,7 +26,7 @@ export default function ProfilePage({ onBack }: Props) {
   const [mainGame, setMainGame] = useState('')
   const [saving, setSaving] = useState(false)
 
-  const myPosts = posts.filter(p => p.userId === user?.uid)
+  const myPosts = posts.filter(p => p.userId === targetUid)
 
   const startEdit = () => {
     setBio(profile?.bio || '')
@@ -52,9 +57,21 @@ export default function ProfilePage({ onBack }: Props) {
           <ArrowLeft className="w-4 h-4 text-gray-500" />
         </button>
         <span className="text-sm font-extrabold text-gray-900">Profile</span>
-        {!editing ? (
+      {!editing && isOwnProfile ? (
           <button onClick={startEdit} className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-violet-600 bg-violet-50 hover:bg-violet-100 rounded-xl transition">
             <Edit2 className="w-3 h-3" /> Edit
+          </button>
+        ) : !editing ? (
+          <button
+            onClick={toggleFollow}
+            disabled={busy}
+            className={`ml-auto px-4 py-1.5 text-xs font-extrabold rounded-xl transition disabled:opacity-50 ${
+              following
+                ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                : 'bg-violet-600 text-white hover:bg-violet-700'
+            }`}
+          >
+            {following ? 'Following' : 'Follow'}
           </button>
         ) : (
           <div className="ml-auto flex gap-2">
@@ -71,15 +88,15 @@ export default function ProfilePage({ onBack }: Props) {
       <div className="max-w-xl mx-auto px-4 pt-6 flex flex-col gap-5">
 
         {/* Avatar + Name */}
-        <div className="flex items-center gap-4">
+       <div className="flex items-center gap-4">
           <div className="w-16 h-16 bg-linear-to-br from-violet-500 to-pink-500 rounded-2xl flex items-center justify-center shrink-0">
             <span className="text-2xl font-extrabold text-white">
-              {user?.displayName?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase()}
+              {profile?.displayName?.[0]?.toUpperCase() || profile?.email?.[0]?.toUpperCase() || '?'}
             </span>
           </div>
           <div>
-            <p className="text-base font-extrabold text-gray-900">{user?.displayName || 'Anonymous'}</p>
-            <p className="text-xs text-gray-400 font-semibold">{user?.email}</p>
+            <p className="text-base font-extrabold text-gray-900">{profile?.displayName || 'Anonymous'}</p>
+            <p className="text-xs text-gray-400 font-semibold">{profile?.email}</p>
             {profile?.gameTag && (
               <span className="inline-block mt-1 text-[10px] font-extrabold px-2 py-0.5 bg-violet-50 text-violet-500 rounded-md border border-violet-100">
                 🎮 {profile.gameTag}
@@ -89,11 +106,12 @@ export default function ProfilePage({ onBack }: Props) {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-4 gap-3">
           {[
             { val: myPosts.length, label: 'Posts' },
+            { val: followerCount, label: 'Followers' },
+            { val: followingCount, label: 'Following' },
             { val: myPosts.reduce((acc, p) => acc + (p.reactions?.['❤️']?.length || 0), 0), label: 'Likes' },
-            { val: myPosts.reduce((acc, p) => acc + (p.comments?.length || 0), 0), label: 'Comments' },
           ].map(({ val, label }) => (
             <div key={label} className="bg-violet-50 rounded-2xl px-4 py-3 text-center border border-violet-100">
               <p className="text-lg font-extrabold text-violet-600">{val}</p>
@@ -160,9 +178,11 @@ export default function ProfilePage({ onBack }: Props) {
           </div>
         </div>
 
-        {/* My Posts */}
+       {/* Posts */}
         <div>
-          <p className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider mb-3">My Posts</p>
+          <p className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider mb-3">
+            {isOwnProfile ? 'My Posts' : 'Posts'}
+          </p>
           {myPosts.length === 0 ? (
             <p className="text-xs text-gray-300 font-semibold text-center py-8">No posts yet.</p>
           ) : (
